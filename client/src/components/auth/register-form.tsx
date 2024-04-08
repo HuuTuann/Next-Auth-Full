@@ -48,7 +48,7 @@ export default function RegisterForm() {
           },
         ).then(async (res) => {
           const payload = await res.json();
-          if (!res.ok) {
+          if (payload.statusText !== "OK") {
             throw payload;
           }
           return payload;

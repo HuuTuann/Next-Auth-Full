@@ -1,5 +1,4 @@
 "use client";
-import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useTransition } from "react";
@@ -17,8 +16,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import CardWrapper from "@/components/auth/card-wrapper";
+import { useToast } from "@/components/ui/use-toast";
+import { envConfig } from "@/config";
 
 export default function LoginForm() {
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<LoginSchemaType>({
@@ -31,13 +33,35 @@ export default function LoginForm() {
 
   const onSubmit = (value: LoginSchemaType) => {
     startTransition(async () => {
-      const result = await fetch(`/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(value),
-      }).then((res) => res.json());
+      try {
+        const result = await fetch(
+          `${envConfig.NEXT_PUBLIC_API_ENDPOINT}/auth/login`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(value),
+          },
+        ).then(async (res) => {
+          const payload = await res.json();
+          if (payload.statusText !== "OK") {
+            throw payload;
+          }
+          return payload;
+        });
+        toast({
+          title: "Login",
+          description: result.message,
+        });
+      } catch (error: any) {
+        console.error(error);
+        toast({
+          title: "Login",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     });
   };
 

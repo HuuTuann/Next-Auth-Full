@@ -3,54 +3,72 @@ import express from "express";
 import { authentication, random } from "../helpers";
 import prisma from "../lib/prisma";
 
-// export const login = async (req: express.Request, res: express.Response) => {
-//   try {
-//     const { email, password } = req.body;
+export const login = async (req: express.Request, res: express.Response) => {
+  try {
+    const { email, password } = req.body;
 
-//     if (!email || !password) {
-//       return res.status(400);
-//     }
+    if (!email || !password) {
+      return res.status(400);
+    }
 
-//     const user = await getUserByEmail(email).select(
-//       "+authentication.salt +authentication.password"
-//     );
+    const user = await prisma.account.findUnique({
+      where: {
+        email,
+      },
+    });
 
-//     if (!user) {
-//       return res.status(400);
-//     }
+    if (!user) {
+      return res
+        .status(400)
+        .json({ statusText: "Not Found", message: "User not found" });
+    }
 
-//     const expectedHash = authentication(user.authentication.salt, password);
+    const expectedHash = authentication(user.salt, password);
 
-//     if (user.authentication.password !== expectedHash) {
-//       return res.status(403);
-//     }
+    if (user.password !== expectedHash) {
+      return res
+        .status(403)
+        .json({ statusText: "Forbidden", message: "Invalid password" });
+    }
 
-//     const salt = random();
-//     user.authentication.sessionToken = authentication(
-//       salt,
-//       user._id.toString()
-//     );
+    const salt = random();
 
-//     await user.save();
+    await prisma.account.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        token: authentication(salt, user.id.toString()),
+      },
+    });
 
-//     res.cookie("NGUYEN-HUU-TUAN", user.authentication.sessionToken, {
-//       domain: "localhost",
-//       path: "/",
-//     });
+    // res.cookie("NGUYEN-HUU-TUAN", user.authentication.sessionToken, {
+    //   domain: "localhost",
+    //   path: "/",
+    // });
 
-//     return res.status(200).json(user).end();
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(400);
-//   }
-// };
+    return res
+      .status(200)
+      .json({
+        data: { ...user },
+        statusText: "OK",
+        message: "Login successfully",
+      })
+      .end();
+  } catch (error) {
+    console.log(error);
+    return res.status(400).json({ message: "Error" });
+  }
+};
 
 export const register = async (req: express.Request, res: express.Response) => {
   try {
     const { email, password, name } = req.body;
 
     if (!email || !password || !name) {
-      return res.status(400).json({ ok: false, message: "Invalid data" });
+      return res
+        .status(400)
+        .json({ statusText: "Forbidden", message: "Invalid data" });
     }
 
     const existingUser = await prisma.account.findUnique({
@@ -62,7 +80,7 @@ export const register = async (req: express.Request, res: express.Response) => {
     if (existingUser) {
       return res
         .status(400)
-        .json({ ok: false, message: "Email already exists" });
+        .json({ statusText: "Forbidden", message: "Email already exists" });
     }
 
     const salt = random();
@@ -80,7 +98,7 @@ export const register = async (req: express.Request, res: express.Response) => {
       .status(201)
       .json({
         data: { ...account },
-        ok: true,
+        statusText: "OK",
         message: "Account created successfully",
       })
       .end();
