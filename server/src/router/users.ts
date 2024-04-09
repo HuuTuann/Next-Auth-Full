@@ -1,10 +1,13 @@
-// import express from "express";
+import express from "express";
 
 // import { getAllUsers, deleteUser, updateUser } from "../controllers/users";
 // import { isAuthenticated, isOwner } from "../middlewares";
 
-// export default (router: express.Router) => {
-//   router.get("/users", isAuthenticated, getAllUsers);
-//   router.delete("/users/:id", isAuthenticated, isOwner, deleteUser);
-//   router.patch("/users/:id", isAuthenticated, isOwner, updateUser);
-// };
+import { getUser } from "../controllers/user";
+
+export default (router: express.Router) => {
+  router.get("/users", getUser);
+  // router.get("/users", isAuthenticated, getAllUsers);
+  // router.delete("/users/:id", isAuthenticated, isOwner, deleteUser);
+  // router.patch("/users/:id", isAuthenticated, isOwner, updateUser);
+};

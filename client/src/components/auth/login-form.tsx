@@ -17,7 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import CardWrapper from "@/components/auth/card-wrapper";
 import { useToast } from "@/components/ui/use-toast";
-import { envConfig } from "@/config";
+import { login, getUser } from "@/api/auth";
+import axios from "@/api/axios";
 
 export default function LoginForm() {
   const { toast } = useToast();
@@ -26,39 +27,32 @@ export default function LoginForm() {
   const form = useForm<LoginSchemaType>({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: "nhtuan010302@gmail.com",
+      password: "nhtuan0103",
     },
   });
 
   const onSubmit = (value: LoginSchemaType) => {
     startTransition(async () => {
       try {
-        const result = await fetch(
-          `${envConfig.NEXT_PUBLIC_API_ENDPOINT}/auth/login`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(value),
-          },
-        ).then(async (res) => {
-          const payload = await res.json();
-          if (payload.statusText !== "OK") {
-            throw payload;
-          }
-          return payload;
-        });
+        const result = await login(value.email, value.password);
+        if (result.statusText !== "OK" || result.status !== 200) {
+          throw result;
+        }
+
+        console.log(result);
+
+        document.cookie = `sessionToken=${result.data.token}; domain=localhost; path=/`;
+
         toast({
           title: "Login",
-          description: result.message,
+          description: result.data.message,
         });
       } catch (error: any) {
         console.error(error);
         toast({
           title: "Login",
-          description: error.message,
+          description: error.response.data.message,
           variant: "destructive",
         });
       }
@@ -74,7 +68,7 @@ export default function LoginForm() {
       showSocial
     >
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit)} method="POST">
           <FormField
             control={form.control}
             name="email"

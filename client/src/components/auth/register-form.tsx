@@ -17,8 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import CardWrapper from "@/components/auth/card-wrapper";
-import { envConfig } from "@/config";
 import { useToast } from "@/components/ui/use-toast";
+import { register } from "@/api/auth";
 
 export default function RegisterForm() {
   const [isPending, startTransition] = useTransition();
@@ -37,31 +37,21 @@ export default function RegisterForm() {
   const onSubmit = (value: RegisterSchemaType) => {
     startTransition(async () => {
       try {
-        const response = await fetch(
-          `${envConfig.NEXT_PUBLIC_API_ENDPOINT}/auth/register`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(value),
-          },
-        ).then(async (res) => {
-          const payload = await res.json();
-          if (payload.statusText !== "OK") {
-            throw payload;
-          }
-          return payload;
-        });
+        const result = await register(value.email, value.password, value.name);
+        if (result.statusText !== "Created" || result.status !== 201) {
+          throw result;
+        }
+        // instance.defaults.headers.common["Authorization"] =
+        //   `Bearer ${result.data.token}`;
         toast({
           title: "Register",
-          description: response.message,
+          description: result.data.message,
         });
       } catch (error: any) {
         toast({
           title: "Register",
           variant: "destructive",
-          description: error.message,
+          description: error.response.data.message,
         });
       }
     });
